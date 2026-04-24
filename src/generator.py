@@ -24,17 +24,18 @@ Answer:"""
 )
 
 
-# ✅ Use FLAN-T5-LARGE
+# ✅ Use FLAN-T5-BASE (lighter & faster)
 if MODEL_PROVIDER == "huggingface":
-    model_id = "google/flan-t5-large"
+    model_id = "google/flan-t5-base"
 
-    print("🚀 Loading FLAN-T5-LARGE model... (this may take time)")
+    print("🚀 Loading FLAN-T5-BASE model...")
 
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
 
+    # ✅ Correct pipeline for T5
     pipe = pipeline(
-        "text-generation",
+        "text2text-generation",
         model=model,
         tokenizer=tokenizer,
         max_new_tokens=256,
