@@ -3,7 +3,7 @@ import requests
 from config import FASTAPI_URL
 
 #We have mode the following value to config.py and imported it there
-#FASTAPI_URL = "http://localhost:8000"
+FASTAPI_URL = "https://aiventure-travel-assistant.onrender.com/"
 
 
 st.title("🧭 AIVenture - Travel Assistance")
