@@ -31,6 +31,22 @@ async def ask_question(req: QueryRequest):
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = None):
+    print("🔥 Upload endpoint hit")
+
+    if not file:
+        return {"message": "No file uploaded"}
+
+    try:
+        result = await ingest_pdf(file)
+        return result  # return real output
+
+    except Exception as e:
+        print("❌ ERROR:", str(e))
+        return {"message": f"Error: {str(e)}"}
+    
+    
+@app.post("/upload")
+async def upload_file(file: UploadFile = None):
     if not file:
         return {"message": "No file uploaded"}
         

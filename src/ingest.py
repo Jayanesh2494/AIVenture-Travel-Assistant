@@ -1,6 +1,7 @@
 from fastapi import UploadFile
-import fitz
+from io import BytesIO
 
+from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
@@ -13,46 +14,50 @@ import uuid
 
 
 async def ingest_pdf(file: UploadFile):
+    print(f"📄 Processing file: {file.filename}")
+
     content = await file.read()
 
+    # Load PDF from memory using pypdf
+    reader = PdfReader(BytesIO(content))
     docs = []
-    pdf = fitz.open(stream=content, filetype="pdf")
 
-    try:
-        for page_num in range(len(pdf)):
-            text = pdf[page_num].get_text().strip()
-            if text:
-                docs.append(
-                    Document(
-                        page_content=text,
-                        metadata={"page": page_num, "source": file.filename}
-                    )
+    for i, page in enumerate(reader.pages):
+        text = (page.extract_text() or "").strip()
+        if text:
+            docs.append(
+                Document(
+                    page_content=text,
+                    metadata={"page": i, "source": file.filename}
                 )
-    finally:
-        pdf.close()
+            )
 
+    print("Pages with text:", len(docs))
+
+    if not docs:
+        return {"message": "No readable text found in PDF (might be scanned/image PDF)"}
+
+    # Split
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
     )
-
     chunks = splitter.split_documents(docs)
+    print("Chunks created:", len(chunks))
 
+    # Embeddings (make sure you're using MiniLM here)
     texts = [c.page_content for c in chunks]
     embeddings = get_embeddings(texts)
+    print("Embeddings generated:", len(embeddings))
 
+    # Qdrant
     client = get_qdrant_client()
-
-    payloads = [
-        {"text": c.page_content, **c.metadata}
-        for c in chunks
-    ]
 
     points = [
         PointStruct(
             id=str(uuid.uuid4()),
             vector=embeddings[i],
-            payload=payloads[i]
+            payload={"text": texts[i], **chunks[i].metadata}
         )
         for i in range(len(embeddings))
     ]
@@ -62,4 +67,7 @@ async def ingest_pdf(file: UploadFile):
         points=points
     )
 
-    return {"message": f"{len(points)} chunks uploaded"}
+    count = client.count(collection_name=COLLECTION_NAME)
+    print("✅ Total vectors in DB:", count)
+
+    return {"message": f"Uploaded {len(points)} chunks"}

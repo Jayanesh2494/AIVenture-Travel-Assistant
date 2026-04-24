@@ -1,11 +1,7 @@
-from openai import OpenAI
-from src.config import OPENAI_API_KEY
+from sentence_transformers import SentenceTransformer
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+# lightweight + fast model
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def get_embeddings(texts):
-    response = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=texts
-    )
-    return [item.embedding for item in response.data]
+    return model.encode(texts).tolist()
