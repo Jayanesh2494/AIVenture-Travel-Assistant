@@ -18,7 +18,7 @@ async def ingest_pdf(file: UploadFile):
 
     content = await file.read()
 
-    # Load PDF from memory using pypdf
+    # Load PDF
     reader = PdfReader(BytesIO(content))
     docs = []
 
@@ -35,24 +35,32 @@ async def ingest_pdf(file: UploadFile):
     print("Pages with text:", len(docs))
 
     if not docs:
-        return {"message": "No readable text found in PDF (might be scanned/image PDF)"}
+        return {"message": "No readable text found in PDF"}
 
-    # Split
+    # ✅ OPTIMIZED SPLITTING
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100
+        chunk_size=300,      # 🔥 reduced
+        chunk_overlap=50     # 🔥 reduced
     )
+
     chunks = splitter.split_documents(docs)
     print("Chunks created:", len(chunks))
 
-    # Embeddings (make sure you're using MiniLM here)
+    # ✅ SAFETY LIMIT (avoid overload)
+    if len(chunks) > 200:
+        chunks = chunks[:200]
+        print("⚠️ Limited to 200 chunks")
+
     texts = [c.page_content for c in chunks]
+
+    # Embeddings
     embeddings = get_embeddings(texts)
     print("Embeddings generated:", len(embeddings))
 
-    # Qdrant
+    # Qdrant client
     client = get_qdrant_client()
 
+    # Prepare points
     points = [
         PointStruct(
             id=str(uuid.uuid4()),
@@ -62,12 +70,19 @@ async def ingest_pdf(file: UploadFile):
         for i in range(len(embeddings))
     ]
 
-    client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=points
-    )
+    # ✅ BATCH UPSERT (🔥 FIX TIMEOUT)
+    batch_size = 20
+
+    for i in range(0, len(points), batch_size):
+        batch = points[i:i + batch_size]
+        print(f"⬆️ Uploading batch {i // batch_size + 1}")
+
+        client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=batch
+        )
 
     count = client.count(collection_name=COLLECTION_NAME)
     print("✅ Total vectors in DB:", count)
 
-    return {"message": f"Uploaded {len(points)} chunks"}
+    return {"message": f"Uploaded {len(points)} chunks successfully"}

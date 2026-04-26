@@ -10,18 +10,16 @@ def get_qdrant_client():
 
     return QdrantClient(
         url=QDRANT_HOST,
-        api_key=QDRANT_API_KEY
+        api_key=QDRANT_API_KEY,
+        timeout=60   # 🔥 IMPORTANT FIX
     )
 
 
 def get_vector_size():
-    """
-    Dynamically set vector size based on embedding model
-    """
     if MODEL_PROVIDER == "openai":
-        return 1536   # text-embedding-3-small
+        return 1536
     elif MODEL_PROVIDER == "huggingface":
-        return 384    # all-MiniLM-L6-v2
+        return 384
     else:
         raise ValueError("Invalid MODEL_PROVIDER")
 
@@ -29,25 +27,20 @@ def get_vector_size():
 def init_qdrant():
     client = get_qdrant_client()
 
-    try:
-        collections = client.get_collections().collections
-        existing = [col.name for col in collections]
+    collections = client.get_collections().collections
+    existing = [col.name for col in collections]
 
-        if COLLECTION_NAME not in existing:
-            print(f"📦 Creating collection '{COLLECTION_NAME}'...")
+    if COLLECTION_NAME not in existing:
+        print(f"📦 Creating collection '{COLLECTION_NAME}'...")
 
-            client.create_collection(
-                collection_name=COLLECTION_NAME,
-                vectors_config=VectorParams(
-                    size=get_vector_size(),
-                    distance=Distance.COSINE
-                ),
-            )
-        else:
-            print(f"✅ Collection '{COLLECTION_NAME}' already exists")
-
-    except Exception as e:
-        print("❌ Qdrant initialization failed:", str(e))
-        raise
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(
+                size=get_vector_size(),
+                distance=Distance.COSINE
+            ),
+        )
+    else:
+        print(f"✅ Collection '{COLLECTION_NAME}' already exists")
 
     return client

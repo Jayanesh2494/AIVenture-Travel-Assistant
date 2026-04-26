@@ -13,11 +13,7 @@ def retrieve_docs(query: str, top_k=5):
         query=query_vector,
         limit=top_k
     )
-    texts = [point.payload.get("text", "") for point in results.points]
-    print("Retrieved texts:", texts)
-    print("Retrieved results:", results)
-    client = get_qdrant_client()
-    count = client.count(collection_name=COLLECTION_NAME)
-    print("Total vectors in DB:", count)
+
+    print("Retrieved:", len(results.points))
 
     return [point.payload.get("text", "") for point in results.points]
