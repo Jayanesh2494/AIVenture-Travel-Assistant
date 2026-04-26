@@ -68,9 +68,9 @@ AIVenture/
 │   ├── ingest.py          # PDF ingestion pipeline
 │   ├── embeddings.py      # Embedding model
 │   ├── vectorstores.py    # Qdrant setup
-│   ├── config.py          # Config variables
-│
-│── app.py                 # Streamlit frontend
+│   ├── config.py         # Config variables
+│   |── app.py            # Streamlit frontend
+│               
 │── requirements.txt
 │── README.md
 ```
@@ -141,7 +141,7 @@ uvicorn src.main:app --reload
 ### Start Frontend (Streamlit)
 
 ```bash
-streamlit run app.py
+streamlit run src/app.py
 ```
 
 ---
