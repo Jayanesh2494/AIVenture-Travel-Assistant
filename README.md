@@ -160,17 +160,6 @@ streamlit run src/app.py
 
 ---
 
-## ⚠️ Limitations
-
-* Free-tier deployment may cause:
-
-  * cold starts
-  * slower inference
-* Large PDFs may increase processing time
-* Not optimized for high concurrency
-
----
-
 ## 🙌 Acknowledgements
 
 * HuggingFace Transformers
